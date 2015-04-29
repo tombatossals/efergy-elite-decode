@@ -1,0 +1,24 @@
+{
+  "name": "efergy-elite-decode",
+  "version": "0.0.1",
+  "description": "Node.JS Efergy Elite decode 1.0",
+  "main": "decode.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tombatossals/efergy-elite-decode.git"
+  },
+  "author": "David Rubert",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tombatossals/efergy-elite-decode/issues"
+  },
+  "homepage": "https://github.com/tombatossals/efergy-elite-decode#readme",
+  "dependencies": {
+    "binary": "^0.3.0",
+    "node-binary": "^1.1.0",
+    "packet": "0.0.6"
+  }
+}
