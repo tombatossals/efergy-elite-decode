@@ -443,11 +443,10 @@ void  main (int argc, char**argv)
 		int positive_preamble_count=0;
 		prvsamp = 0;
 		while ( !feof(stdin) ) {
-			int b1 = (int) fgetc(stdin);
+			int b1 = fgetc(stdin);
 			int b2 = fgetc(stdin)<<8;
 			int cursamp  = (int16_t) (b1 | b2<<8);
-			printf("-- %d %d %d --", b1, b2, cursamp);
-			exit(1);
+			printf("-- %d %d %d --\n", b1, b2, cursamp);
 			// Check for preamble
 			if ((prvsamp >= analysis_wavecenter) && (cursamp >= analysis_wavecenter)) {
 				positive_preamble_count++;

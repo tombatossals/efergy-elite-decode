@@ -10,9 +10,9 @@ var positive_preamble_count=0;
 var previous_sample = 0;
 
 var ws = binary().loop(function(end, vars) {
-    this.word8s('x').tap(function(vars) {
-        var current_sample = vars.x | vars.x << 8;
-        console.log(new Date(), current_sample, previous_sample, positive_preamble_count, negative_preamble_count);
+    this.word8bs('x').word8bs('y').tap(function(vars) {
+        var current_sample = vars.x | vars.y << 8;
+        console.log(vars.x, vars.y, current_sample);
         if ((previous_sample >= analysis_wavecenter) && (current_sample >= analysis_wavecenter)) {
             positive_preamble_count++;
         } else if ((previous_sample < analysis_wavecenter) && (current_sample < analysis_wavecenter)) {
