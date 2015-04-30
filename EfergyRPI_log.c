@@ -444,7 +444,7 @@ void  main (int argc, char**argv)
 		prvsamp = 0;
 		while ( !feof(stdin) ) {
 			int b1 = fgetc(stdin);
-			int b2 = fgetc(stdin)<<8;
+			int b2 = fgetc(stdin);
 			int cursamp  = (int16_t) (b1 | b2<<8);
 			printf("-- %d %d %d --\n", b1, b2, cursamp);
 			// Check for preamble
@@ -455,12 +455,12 @@ void  main (int argc, char**argv)
 			} else if ((prvsamp >= analysis_wavecenter) && (cursamp < analysis_wavecenter)) {
 				if ((positive_preamble_count > MIN_POSITIVE_PREAMBLE_SAMPLES) &&
 					(negative_preamble_count > MIN_NEGATIVE_PREAMBLE_SAMPLES))
-					break;
+					exit(1);
 				negative_preamble_count=0;
 			} else if ((prvsamp < analysis_wavecenter) && (cursamp >= analysis_wavecenter)) {
 				if ((positive_preamble_count > MIN_POSITIVE_PREAMBLE_SAMPLES) &&
 					(negative_preamble_count > MIN_NEGATIVE_PREAMBLE_SAMPLES))
-					break;
+					exit(1);
 				positive_preamble_count=0;
 			}
 			prvsamp = cursamp;
