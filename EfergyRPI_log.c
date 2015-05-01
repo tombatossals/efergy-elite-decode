@@ -103,7 +103,7 @@ rtl_fm -f 433550000 -s 200000 -r 96000 -g 19.7 2>/dev/null | ./EfergyRPI_log
 #include <stdlib.h> // For exit function
 #include <string.h>
 
-#define VOLTAGE			220	/*For non-TPM type sensors, set to line voltage */
+#define VOLTAGE			240	/*For non-TPM type sensors, set to line voltage */
 //#define VOLTAGE			1	/* For Efergy Elite 3.0 TPM,  set to 1 */
 
 #define FRAMEBYTECOUNT				9  /* Attempt to decode up to this many bytes.   */
@@ -111,8 +111,8 @@ rtl_fm -f 433550000 -s 200000 -r 96000 -g 19.7 2>/dev/null | ./EfergyRPI_log
 #define MINHIGHBITS				9  /* Min number of positive samples for a logic 1 */
 #define MIN_POSITIVE_PREAMBLE_SAMPLES		40 /* Number of positive samples in  an efergy  preamble */
 #define MIN_NEGATIVE_PREAMBLE_SAMPLES		40 /* Number of negative samples for a valid preamble  */
-#define EXPECTED_BYTECOUNT_IF_CHECKSUM_USED	9
-#define EXPECTED_BYTECOUNT_IF_CRC_USED 		19
+#define EXPECTED_BYTECOUNT_IF_CHECKSUM_USED	8
+#define EXPECTED_BYTECOUNT_IF_CRC_USED 		9
 
 int analysis_wavecenter;
 
@@ -443,10 +443,7 @@ void  main (int argc, char**argv)
 		int positive_preamble_count=0;
 		prvsamp = 0;
 		while ( !feof(stdin) ) {
-			int b1 = fgetc(stdin);
-			int b2 = fgetc(stdin);
-			int cursamp  = (int16_t) (b1 | b2<<8);
-			printf("-- %d %d %d --\n", b1, b2, cursamp);
+			int cursamp  = (int16_t) (fgetc(stdin) | fgetc(stdin)<<8);
 			// Check for preamble
 			if ((prvsamp >= analysis_wavecenter) && (cursamp >= analysis_wavecenter)) {
 				positive_preamble_count++;
@@ -455,12 +452,12 @@ void  main (int argc, char**argv)
 			} else if ((prvsamp >= analysis_wavecenter) && (cursamp < analysis_wavecenter)) {
 				if ((positive_preamble_count > MIN_POSITIVE_PREAMBLE_SAMPLES) &&
 					(negative_preamble_count > MIN_NEGATIVE_PREAMBLE_SAMPLES))
-					exit(1);
+					break;
 				negative_preamble_count=0;
 			} else if ((prvsamp < analysis_wavecenter) && (cursamp >= analysis_wavecenter)) {
 				if ((positive_preamble_count > MIN_POSITIVE_PREAMBLE_SAMPLES) &&
 					(negative_preamble_count > MIN_NEGATIVE_PREAMBLE_SAMPLES))
-					exit(1);
+					break;
 				positive_preamble_count=0;
 			}
 			prvsamp = cursamp;
