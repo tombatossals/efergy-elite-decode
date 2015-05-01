@@ -40,8 +40,6 @@ func generate_pulse_count_array(samples []int16, analysis_wavecenter int16) ([SA
 	var store_positive_pulses bool = (samples[2] < analysis_wavecenter)
     var pulse_count_storage [SAMPLES_SIZE]int
 
-    fmt.Printf("\nPulse stream for this frame (P-Consecutive samples > center, N-Consecutive samples < center)\n")
-
 	wrap_count := 0
 	pulse_count := 0
 	space_count := 0
@@ -55,8 +53,6 @@ func generate_pulse_count_array(samples []int16, analysis_wavecenter int16) ([SA
 				  pulse_count_storage[pulse_store_index] = pulse_count
                   pulse_store_index++
                 }
-
-                fmt.Printf("%2dP ", pulse_count)
 				wrap_count++;
 			}
 			pulse_count=0;
@@ -68,7 +64,6 @@ func generate_pulse_count_array(samples []int16, analysis_wavecenter int16) ([SA
 				    pulse_count_storage[pulse_store_index]=space_count
                     pulse_store_index++
                 }
-                fmt.Printf("%2dN ", space_count)
 				wrap_count++
 			}
 			space_count=0
@@ -76,22 +71,18 @@ func generate_pulse_count_array(samples []int16, analysis_wavecenter int16) ([SA
 		}
 
 		if (wrap_count >= 16) {
-            fmt.Printf("\n")
 			wrap_count=0;
 		}
 	}
-    fmt.Printf("\n\n")
-
 	return pulse_count_storage, pulse_store_index;
 }
 
-func display_frame_data(debug_level int, bytes [FRAMEBYTECOUNT]byte, bytecount int) {
-	fmt.Printf("%x", bytes)
+func display_frame_data(bytes []byte) {
     var data_ok_str string = ""
 	var checksum byte = 0
 
-	checksum = compute_checksum(bytes, bytecount);
-	if (checksum == bytes[bytecount-1]) {
+	checksum = compute_checksum(bytes);
+	if (checksum == bytes[len(bytes)-2]) {
 		data_ok_str = "chksum ok"
     }
 
@@ -102,14 +93,14 @@ func display_frame_data(debug_level int, bytes [FRAMEBYTECOUNT]byte, bytecount i
 			fmt.Printf("%s ", time.Now());
         }
 
-		for i:=0;i<bytecount;i++ {
+		for i:=0;i<len(bytes);i++ {
 			fmt.Printf("%02x ",bytes[i])
         }
 
 		if (data_ok_str != "") {
 			fmt.Printf("%s", data_ok_str)
 		} else {
-			checksum = compute_checksum(bytes, bytecount)
+			checksum = compute_checksum(bytes)
             fmt.Printf(" cksum: %02x ",checksum)
 		}
 
@@ -130,17 +121,11 @@ func display_frame_data(debug_level int, bytes [FRAMEBYTECOUNT]byte, bytecount i
 }
 
 
-func decode_bytes_from_pulse_counts(pulse_store [SAMPLES_SIZE]int, pulse_store_index int) ([FRAMEBYTECOUNT]byte, int) {
+func decode_bytes_from_pulse_counts(pulse_store [SAMPLES_SIZE]int, pulse_store_index int) ([]byte) {
 	dbit := 0
 	bitpos := 0
 	var bytedata byte = 0
-    var bytes [FRAMEBYTECOUNT]byte
-	bytecount := 0
-
-	for i:=0;i<FRAMEBYTECOUNT;i++ {
-		bytes[i]=0;
-    }
-
+    bytes := make([]byte, 0, FRAMEBYTECOUNT)
 	for i:=0; i<pulse_store_index; i++ {
 		if (pulse_store[i] > MINLOWBITS) {
 			dbit++;
@@ -151,22 +136,21 @@ func decode_bytes_from_pulse_counts(pulse_store [SAMPLES_SIZE]int, pulse_store_i
             }
 
 			if (bitpos > 7) {
-				bytes[bytecount] = bytedata;
+				bytes = append(bytes, bytedata);
 				bytedata = 0;
 				bitpos = 0;
-				bytecount++;
-				if (bytecount == FRAMEBYTECOUNT) {
-					return bytes, bytecount;
+				if (len(bytes) == FRAMEBYTECOUNT) {
+					return bytes;
 				}
 			}
 		}
 	}
-	return bytes, bytecount;
+	return bytes;
 }
 
-func compute_checksum(data [FRAMEBYTECOUNT]byte, bytecount int) (byte) {
+func compute_checksum(data []byte) (byte) {
 	var tbyte byte = 0x00;
-	for i:=0;i<(bytecount-1);i++ {
+	for i:=0; i<len(data)-1; i++ {
 	  tbyte += data[i];
 	}
 
@@ -200,14 +184,11 @@ func calculate_wave_center(samples []int16) (int16) {
 	return int16(avg_neg + ((avg_pos-avg_neg)/2))
 }
 
-func analyze_efergy_message(data []byte, index int, samples []int16, analysis_wavecenter int16) {
+func analyze_efergy_message(data []byte, index int, samples []int16, analysis_wavecenter int16) ([]byte) {
     pulse_count_storage, pulse_store_index := generate_pulse_count_array(samples, analysis_wavecenter)
-	bytearray, bytecount := decode_bytes_from_pulse_counts(pulse_count_storage, pulse_store_index)
-	display_frame_data(debug_level, bytearray, bytecount);
+	bytearray := decode_bytes_from_pulse_counts(pulse_count_storage, pulse_store_index)
 
-	if (debug_level>1) {
-        fmt.Printf("\n")
-    }
+    return bytearray;
 }
 
 func get_samples(data []byte, index int, samples []int16) (State, []int16, int) {
@@ -283,7 +264,8 @@ func main() {
                     state, samples, index = get_samples(binary_data[:bytes_read], index, samples)
                 case ANALYZING_MESSAGE:
                     analysis_wavecenter = calculate_wave_center(samples)
-                    analyze_efergy_message(binary_data[:bytes_read], index, samples, analysis_wavecenter)
+                    bytearray := analyze_efergy_message(binary_data[:bytes_read], index, samples, analysis_wavecenter)
+                    display_frame_data(bytearray);
                     os.Exit(1)
             }
 
