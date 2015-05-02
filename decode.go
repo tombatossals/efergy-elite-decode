@@ -3,10 +3,10 @@ package main
 import (
     "bufio"
     "io"
-    "fmt"
     "time"
     "os"
     "strconv"
+    "github.com/garyburd/redigo/redis"
 )
 
 type State int
@@ -77,39 +77,17 @@ func generate_pulse_count_array(samples []int16, analysis_wavecenter int16) ([SA
 	return pulse_count_storage, pulse_store_index;
 }
 
-func display_frame_data(bytes []byte) {
-    var data_ok_str string = ""
-	var checksum byte = 0
-
-	checksum = compute_checksum(bytes);
+func get_frame_miliwatts(bytes []byte) (int) {
+	checksum := compute_checksum(bytes);
+    var result float64 = 0
 	if (checksum == bytes[len(bytes)-1]) {
-		data_ok_str = "chksum ok"
+        var bigbyte = bytes[5] >> 4;
+        var current_adc float32 = float32(bigbyte) * 256 + float32(bytes[7])
+        var divisor = float64(90000)
+        result = float64(current_adc) * VOLTAGE / divisor
     }
 
-    var bigbyte = bytes[5] >> 4;
-	var current_adc float32 = float32(bigbyte) * 256 + float32(bytes[7])
-    var divisor = float64(90000)
-	var result float64 = float64(current_adc) * VOLTAGE / divisor
-	if (debug_level > 0) {
-        fmt.Printf("binary: %v %v %v %v ", strconv.FormatInt(int64(bytes[4]), 2), strconv.FormatInt(int64(bytes[5]), 2), strconv.FormatInt(int64(bytes[6]), 2), strconv.FormatInt(int64(bytes[7]), 2))
-
-		if (debug_level == 1) {
-			fmt.Printf("%s ", time.Now());
-        }
-
-        fmt.Printf("# hex: ")
-		for i:=0;i<len(bytes);i++ {
-			fmt.Printf("%02x ",bytes[i])
-        }
-
-		fmt.Printf("# %s", data_ok_str)
-        fmt.Printf("# kW: %4.3f\n", result)
-
-    } else if (data_ok_str != "") {
-		fmt.Printf("%s,%f\n",time.Now(),result);
-	} else {
-        fmt.Printf("Checksum/CEC Error.  Enable debug output with -d option\n")
-    }
+    return int(result*1000)
 }
 
 
@@ -231,12 +209,22 @@ func search_preamble(data []byte, index int, preambleState PreambleState, analys
     return SEARCHING_PREAMBLE, index, preambleState
 }
 
+func redis_connect() (redis.Conn) {
+    c, err := redis.Dial("tcp", "localhost:6379")
+    if err != nil {
+        panic(err)
+    }
+    return c
+}
+
 func main() {
     r := bufio.NewReader(os.Stdin)
     binary_data := make([]byte, 0, 4*1024)
     var state State  = SEARCHING_PREAMBLE;
     preambleState := PreambleState{}
     samples := make([]int16, 0, SAMPLES_SIZE)
+
+    redis_conn := redis_connect()
 
     var analysis_wavecenter int16 = 0
 
@@ -257,7 +245,9 @@ func main() {
                 case ANALYZING_MESSAGE:
                     analysis_wavecenter = calculate_wave_center(samples)
                     bytearray := analyze_efergy_message(binary_data[:bytes_read], index, samples, analysis_wavecenter)
-                    display_frame_data(bytearray);
+                    mwatts := get_frame_miliwatts(bytearray);
+                    print(mwatts)
+                    val, err := redis_conn.Do("SET", "watts:" + time.Now().Format("20060102150405"), strconv.Itoa(mwatts))
                     state = SEARCHING_PREAMBLE
                     samples = make([]int16, 0, SAMPLES_SIZE)
             }
@@ -269,4 +259,6 @@ func main() {
 
         binary_data = binary_data[:bytes_read]
     }
+    defer redis_conn.Close()
+
 }
