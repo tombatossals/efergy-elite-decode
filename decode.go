@@ -7,6 +7,7 @@ import (
     "fmt"
     "time"
     "os"
+    "strconv"
 )
 
 type State int
@@ -82,30 +83,33 @@ func display_frame_data(bytes []byte) {
 	var checksum byte = 0
 
 	checksum = compute_checksum(bytes);
-	if (checksum == bytes[len(bytes)-2]) {
+	if (checksum == bytes[len(bytes)-1]) {
 		data_ok_str = "chksum ok"
     }
 
 	var current_adc float32 = float32(bytes[4]) * 256 + float32(bytes[5])
 	var result float64 = float64(VOLTAGE*current_adc) / 32768 / math.Pow(2, float64(bytes[6]))
 	if (debug_level > 0) {
+        fmt.Printf("binary: %v %v %v %v ", strconv.FormatInt(int64(bytes[4]), 2), strconv.FormatInt(int64(bytes[5]), 2), strconv.FormatInt(int64(bytes[6]), 2), strconv.FormatInt(int64(bytes[7]), 2))
+
 		if (debug_level == 1) {
 			fmt.Printf("%s ", time.Now());
         }
 
+        fmt.Printf("# hex: ")
 		for i:=0;i<len(bytes);i++ {
 			fmt.Printf("%02x ",bytes[i])
         }
 
 		if (data_ok_str != "") {
-			fmt.Printf("%s", data_ok_str)
+			fmt.Printf("# %s", data_ok_str)
 		} else {
 			checksum = compute_checksum(bytes)
-            fmt.Printf(" cksum: %02x ",checksum)
+            fmt.Printf("# cksum: %02x ",checksum)
 		}
 
 		if (result < 100) {
-            fmt.Printf("  kW: %4.3f\n", result)
+            fmt.Printf("# kW: %4.3f\n", result)
 		} else {
             fmt.Printf("  kW: <out of range>\n");
 			if (data_ok_str !=  "") {
@@ -266,7 +270,8 @@ func main() {
                     analysis_wavecenter = calculate_wave_center(samples)
                     bytearray := analyze_efergy_message(binary_data[:bytes_read], index, samples, analysis_wavecenter)
                     display_frame_data(bytearray);
-                    os.Exit(1)
+                    state = SEARCHING_PREAMBLE
+                    samples = make([]int16, 0, SAMPLES_SIZE)
             }
 
             if (index >= len(binary_data)) {
