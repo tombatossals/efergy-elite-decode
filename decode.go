@@ -88,7 +88,7 @@ func display_frame_data(bytes []byte) {
 
     var bigbyte = bytes[5] >> 4;
 	var current_adc float32 = float32(bigbyte) * 256 + float32(bytes[7])
-    var divisor = 90000
+    var divisor = float64(90000)
 	var result float64 = float64(current_adc) * VOLTAGE / divisor
 	if (debug_level > 0) {
         fmt.Printf("binary: %v %v %v %v ", strconv.FormatInt(int64(bytes[4]), 2), strconv.FormatInt(int64(bytes[5]), 2), strconv.FormatInt(int64(bytes[6]), 2), strconv.FormatInt(int64(bytes[7]), 2))
