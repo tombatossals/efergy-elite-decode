@@ -3,7 +3,6 @@ package main
 import (
     "bufio"
     "io"
-    "math"
     "fmt"
     "time"
     "os"
@@ -87,8 +86,9 @@ func display_frame_data(bytes []byte) {
 		data_ok_str = "chksum ok"
     }
 
-	var current_adc float32 = float32(bytes[4]) * 256 + float32(bytes[5])
-	var result float64 = float64(VOLTAGE*current_adc) / 32768 / math.Pow(2, float64(bytes[6]))
+	var current_adc float32 = float32(bytes[6]) * 256 + float32(bytes[7])
+    var divisor = 0.0024242424242424242
+	var result float64 = float64(current_adc) * divisor
 	if (debug_level > 0) {
         fmt.Printf("binary: %v %v %v %v ", strconv.FormatInt(int64(bytes[4]), 2), strconv.FormatInt(int64(bytes[5]), 2), strconv.FormatInt(int64(bytes[6]), 2), strconv.FormatInt(int64(bytes[7]), 2))
 
@@ -101,21 +101,8 @@ func display_frame_data(bytes []byte) {
 			fmt.Printf("%02x ",bytes[i])
         }
 
-		if (data_ok_str != "") {
-			fmt.Printf("# %s", data_ok_str)
-		} else {
-			checksum = compute_checksum(bytes)
-            fmt.Printf("# cksum: %02x ",checksum)
-		}
-
-		if (result < 100) {
-            fmt.Printf("# kW: %4.3f\n", result)
-		} else {
-            fmt.Printf("  kW: <out of range>\n");
-			if (data_ok_str !=  "") {
-                fmt.Printf("*For Efergy True Power Moniter (TPM), set VOLTAGE=1 before compiling\n")
-            }
-        }
+		fmt.Printf("# %s", data_ok_str)
+        fmt.Printf("# kW: %4.3f\n", result)
 
     } else if (data_ok_str != "") {
 		fmt.Printf("%s,%f\n",time.Now(),result);
