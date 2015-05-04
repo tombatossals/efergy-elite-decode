@@ -84,7 +84,10 @@ func get_frame_miliwatts(bytes []byte) (int) {
     var result float64 = 0
 	if (checksum == bytes[len(bytes)-1]) {
         var bigbyte = bytes[5] >> 4;
-        var current_adc float64 = math.Pow(2, float64(bigbyte)) * float64(bytes[7])
+        var firstbit = (bigbyte >> 0 ) & 1
+        var secondbit = (bigbyte >> 1 ) & 1
+        var amp = float64(firstbit) * 256 + float64(bytes[7])
+        var current_adc float64 = math.Pow(2, float64(secondbit)) * amp
         var divisor = float64(90000)
         result = float64(current_adc) * VOLTAGE / divisor
     }
