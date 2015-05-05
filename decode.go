@@ -3,6 +3,7 @@ package main
 import (
     "bufio"
     "io"
+    "fmt"
     "time"
     "os"
     "strconv"
@@ -82,9 +83,25 @@ func get_frame_miliwatts(bytes []byte) (int) {
     var result float64 = 0
 	if (checksum == bytes[len(bytes)-1]) {
         var bigbyte = bytes[5] >> 4;
-        var current_adc float32 = float32(bigbyte) * 256 + float32(bytes[7])
-        var divisor = float64(90000)
-        result = float64(current_adc) * VOLTAGE / divisor
+        offset := 0
+        crange := 610
+        switch bigbyte {
+            case 1:
+                offset = 610
+                crange = 2100
+            case 2:
+                offset = 2700
+                crange = 6300
+            case 3:
+                offset = 7000
+                crange = 18900
+        }
+
+        var current_adc float32 = float32(offset) + float32(crange)*float32(bytes[7])/float32(256)
+        //var divisor = float64(90000)
+        //result = float64(current_adc) * VOLTAGE / divisor
+        result = float64(current_adc)
+        return int(result)
     }
 
     return int(result*1000)
@@ -246,8 +263,8 @@ func main() {
                     analysis_wavecenter = calculate_wave_center(samples)
                     bytearray := analyze_efergy_message(binary_data[:bytes_read], index, samples, analysis_wavecenter)
                     mwatts := get_frame_miliwatts(bytearray);
-                    print(mwatts)
-                    val, err := redis_conn.Do("SET", "watts:" + time.Now().Format("20060102150405"), strconv.Itoa(mwatts))
+                    fmt.Printf("%x %d\n", bytearray, mwatts)
+                    redis_conn.Do("SET", "watts:" + time.Now().Format("20060102150405"), strconv.Itoa(mwatts))
                     state = SEARCHING_PREAMBLE
                     samples = make([]int16, 0, SAMPLES_SIZE)
             }
