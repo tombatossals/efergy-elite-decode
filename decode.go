@@ -3,10 +3,8 @@ package main
 import (
     "bufio"
     "io"
-    "fmt"
     "time"
     "fmt"
-    "math"
     "os"
     "strconv"
     "github.com/garyburd/redigo/redis"
