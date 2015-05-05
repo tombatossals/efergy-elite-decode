@@ -101,10 +101,9 @@ func get_frame_miliwatts(bytes []byte) (int) {
         //var divisor = float64(90000)
         //result = float64(current_adc) * VOLTAGE / divisor
         result = float64(current_adc)
-        return int(result)
     }
 
-    return int(result*1000)
+    return int(result)
 }
 
 
