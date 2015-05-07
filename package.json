@@ -19,6 +19,7 @@
   "dependencies": {
     "binary": "^0.3.0",
     "hiredis": "^0.3.0",
+    "influx": "^3.3.0",
     "node-binary": "^1.1.0",
     "packet": "0.0.6",
     "powerpromises": "0.0.2",
