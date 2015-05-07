@@ -18,7 +18,11 @@
   "homepage": "https://github.com/tombatossals/efergy-elite-decode#readme",
   "dependencies": {
     "binary": "^0.3.0",
+    "hiredis": "^0.3.0",
     "node-binary": "^1.1.0",
-    "packet": "0.0.6"
+    "packet": "0.0.6",
+    "powerpromises": "0.0.2",
+    "q": "^1.3.0",
+    "redis": "^0.12.1"
   }
 }
